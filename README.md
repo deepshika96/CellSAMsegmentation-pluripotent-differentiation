@@ -15,6 +15,14 @@ This repository provides an interactive pipeline for threshold-based preprocessi
 - Export results as `.tif` masks and Excel `.xlsx` summary
 
 ---
+## CellSAM:
+@article{israel2023foundation,
+  title={A Foundation Model for Cell Segmentation},
+  author={Israel, Uriah and Marks, Markus and Dilip, Rohit and Li, Qilin and Schwartz, Morgan and Pradhan, Elora and Pao, Edward and Li, Shenyi and Pearson-Goulart, Alexander and Perona, Pietro and others},
+  journal={bioRxiv},
+  publisher={Cold Spring Harbor Laboratory Preprints},
+  doi = {10.1101/2023.11.17.567630},
+}
 
 ## 📦 Requirements
 
@@ -22,3 +30,5 @@ Install the required packages:
 
 ```bash
 pip install -r requirements.txt
+
+
