@@ -1,0 +1,121 @@
+"""
+Interactive Cell Segmentation Pipeline
+--------------------------------------
+
+This script performs interactive threshold-based segmentation of PNG images, 
+followed by deep learning-based segmentation using CellSAM. It outputs 
+labeled masks and a summary Excel file with object counts.
+
+Dependencies:
+- numpy
+- pandas
+- imageio
+- matplotlib
+- skimage
+- tifffile
+- ipywidgets
+- cellSAM (custom module)
+
+Author: [Your Name]
+Date: [YYYY-MM-DD]
+"""
+
+import os
+import numpy as np
+import pandas as pd
+import imageio.v3 as iio
+import matplotlib.pyplot as plt
+from skimage.measure import label
+import tifffile
+import ipywidgets as widgets
+from IPython.display import display, clear_output
+
+from cellSAM import cellsam_pipeline, segment_cellular_image
+
+# === CONFIGURATION ===
+input_folder = "/kaggle/input/test-input-images"
+output_folder = "/kaggle/working/test_output_masks"
+excel_output_path = os.path.join(output_folder, "minmaxmask_object_count.xlsx")
+
+# Create output directory if it doesn't exist
+os.makedirs(output_folder, exist_ok=True)
+
+results = []  # Store results for Excel export
+
+# === MAIN PROCESSING LOOP ===
+for file_name in os.listdir(input_folder):
+    if file_name.lower().endswith(".png"):
+        input_path = os.path.join(input_folder, file_name)
+
+        # --- Step 1: Read and crop the image ---
+        img = iio.imread(input_path)[8:-7, 8:-7]
+
+        # --- Step 2: Brightness/Contrast Stretching ---
+        min_val, max_val = 5, 225
+        img_stretched = np.clip(img, min_val, max_val)
+        img_stretched = ((img_stretched - min_val) / (max_val - min_val)) * 255
+        img_stretched = img_stretched.astype(np.uint8)
+
+        # --- Step 3: Interactive Thresholding ---
+        threshold_slider = widgets.IntSlider(
+            value=50, min=0, max=255, step=1, description='Threshold:'
+        )
+        binary_mask = None  # Will be updated interactively
+
+        def update(thresh):
+            """Display image, histogram, and binary threshold preview."""
+            global binary_mask
+            binary_mask = (img_stretched > thresh).astype(np.uint8)
+
+            clear_output(wait=True)
+            fig, ax = plt.subplots(1, 3, figsize=(15, 4))
+
+            ax[0].imshow(img_stretched, cmap='gray')
+            ax[0].set_title("Stretched Image")
+            ax[0].axis('off')
+
+            ax[1].hist(img_stretched.ravel(), bins=256, color='gray')
+            ax[1].axvline(thresh, color='red', linestyle='--')
+            ax[1].set_title("Histogram")
+
+            ax[2].imshow(binary_mask, cmap='gray')
+            ax[2].set_title(f"Threshold > {thresh}")
+            ax[2].axis('off')
+
+            plt.suptitle(f"Interactive Threshold for {file_name}")
+            plt.show()
+
+            display(threshold_slider)
+
+        display(widgets.interact(update, thresh=threshold_slider))
+        print("🛑 Adjust the threshold, then press ENTER below to continue...")
+        input("Press ENTER to confirm and continue...")
+
+        # --- Step 4: Segment using CellSAM ---
+        mask, _, _ = segment_cellular_image(binary_mask.astype(np.uint8), device='cuda')
+
+        # --- Step 5: Label the binary mask ---
+        if mask.dtype == bool or np.array_equal(np.unique(mask), [0, 1]):
+            labeled_mask = label(mask)
+        else:
+            labeled_mask = mask
+
+        # --- Step 6: Count labeled objects ---
+        object_count = np.count_nonzero(np.unique(labeled_mask)) - 1
+
+        # --- Step 7: Save labeled mask as .tif ---
+        mask_output_path = os.path.join(output_folder, file_name.replace(".png", "_mask.tif"))
+        tifffile.imwrite(mask_output_path, labeled_mask.astype(np.uint16))
+
+        # --- Step 8: Store result in list ---
+        results.append({
+            "File Name": file_name,
+            "Object Count": object_count
+        })
+
+        print(f"✅ Processed: {file_name} | Objects: {object_count}")
+
+# === Final Step: Export summary to Excel ===
+df = pd.DataFrame(results)
+df.to_excel(excel_output_path, index=False)
+print(f"\n📄 Excel summary saved to: {excel_output_path}")
