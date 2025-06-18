@@ -1,0 +1,7 @@
+numpy
+pandas
+imageio
+matplotlib
+scikit-image
+tifffile
+ipywidgets
