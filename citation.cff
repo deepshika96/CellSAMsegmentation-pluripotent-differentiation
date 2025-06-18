@@ -1,0 +1,19 @@
+
+cff-version: 1.2.0
+title: CellSAM-pluripotent
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Deepshika
+    family-names: Arasu
+    email: deepshika96@gmail.com
+    affiliation: University Of Barcelona
+identifiers:
+  - type: url
+    value: 'https://github.com/deepshika96/CellSAMsegmentation-pluripotent-differentiation'
+abstract: >-
+  Performs CellSAM segemention on 2D images-
+  with inbuilt interactive image analysis.
+license: MIT-0
