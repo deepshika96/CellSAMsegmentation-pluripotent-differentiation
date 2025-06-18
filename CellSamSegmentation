@@ -16,8 +16,8 @@ Dependencies:
 - ipywidgets
 - cellSAM (custom module)
 
-Author: [Your Name]
-Date: [YYYY-MM-DD]
+Author: Deepshika Arasu
+Date: 2025-05-15
 """
 
 import os
